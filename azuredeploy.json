@@ -10,7 +10,7 @@
         },
         "location": {
             "type": "string",
-            "defaultValue": "[resourceGroup().location]",
+            "defaultValue": "eastus",
             "metadata": {
             "description": "Specifies the Azure location where the key vault should be created."
             }
@@ -23,7 +23,7 @@
         },
         "tenantId": {
             "type": "string",
-            "defaultValue": "[subscription().tenantId]",
+            "defaultValue": "f8cdef31-a31e-4b4a-93e4-5f571e91255a",
             "metadata": {
             "description": "Specifies the Azure Active Directory tenant ID that should be used for authenticating requests to the key vault. Get it by using Get-AzSubscription cmdlet."
             }
