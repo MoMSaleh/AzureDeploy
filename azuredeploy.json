@@ -1,0 +1,237 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "keyVaultName": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies the name of the key vault."
+            }
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+            "description": "Specifies the Azure location where the key vault should be created."
+            }
+        },
+        "keyVaultOwnerId": {
+            "type": "string",
+            "metadata": {
+            "description": "Specifies the object ID of who will be responsible for the key vault. user, service principal or security group in the Azure Active Directory tenant for the vault. The object ID must be unique for the list of access policies. Get it by using Get-AzADUser or Get-AzADServicePrincipal cmdlets."
+            }
+        },
+        "tenantId": {
+            "type": "string",
+            "defaultValue": "[subscription().tenantId]",
+            "metadata": {
+            "description": "Specifies the Azure Active Directory tenant ID that should be used for authenticating requests to the key vault. Get it by using Get-AzSubscription cmdlet."
+            }
+        },
+        "skuName": {
+            "type": "string",
+            "defaultValue": "standard",
+            "allowedValues": [
+                "standard",
+                "premium"
+            ],
+            "metadata": {
+                "description": "Specifies whether the key vault is a standard vault or a premium vault."
+            }
+        },
+        "secretName_MySqlGhostDatabasePassword": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies the name of the secret for MySql Ghost Database Password."
+            }
+        },
+        "secretValue_MySqlGhostDatabasePassword": {
+            "type": "secureString",
+            "metadata": {
+                "description": "Specifies the value of the secret for MySql Ghost Database Password."
+            }
+        },
+        "secretName_GhostAdminApiKey": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies the name of the secret for Ghost Admin Api Key."
+            }
+        },
+        "secretValue_GhostAdminApiKey": {
+            "type": "secureString",
+            "metadata": {
+                "description": "Specifies the value of the secret for Ghost Admin Api Key."
+            }
+        },
+        "secretName_DockerRegistryServerPassword": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies the name of the secret for Docker Registry Server Password."
+            }
+        },
+        "secretValue_DockerRegistryServerPassword": {
+            "type": "secureString",
+            "metadata": {
+                "description": "Specifies the value of the secret for Docker Registry Server Password."
+            }
+        },
+        "webAppName": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies the name of the Azure Web App."
+            }
+        },
+        "functionAppName": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies the name of the Azure Web App."
+            }
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.KeyVault/vaults",
+            "apiVersion": "2021-11-01-preview",
+            "name": "[parameters('keyVaultName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "sku": {
+                    "name": "[parameters('skuName')]",
+                    "family": "A"
+                },
+                "tenantId": "[parameters('tenantId')]",
+                "accessPolicies": [
+                    {
+                        "tenantId": "[parameters('tenantId')]",
+                        "objectId": "[parameters('keyVaultOwnerId')]",
+                        "permissions": {
+                            "keys": [
+                                "Get",
+                                "List",
+                                "Update",
+                                "Create",
+                                "Import",
+                                "Delete",
+                                "Recover",
+                                "Backup",
+                                "Restore",
+                                "GetRotationPolicy",
+                                "SetRotationPolicy",
+                                "Rotate"
+                            ],
+                            "secrets": [
+                                "Get",
+                                "List",
+                                "Set",
+                                "Delete",
+                                "Recover",
+                                "Backup",
+                                "Restore"
+                            ],
+                            "certificates": [
+                                "Get",
+                                "List",
+                                "Update",
+                                "Create",
+                                "Import",
+                                "Delete",
+                                "Recover",
+                                "Backup",
+                                "Restore",
+                                "ManageContacts",
+                                "ManageIssuers",
+                                "GetIssuers",
+                                "ListIssuers",
+                                "SetIssuers",
+                                "DeleteIssuers"
+                            ]
+                        }
+                    }
+                ],
+                "enabledForDeployment": false,
+                "enabledForDiskEncryption": false,
+                "enabledForTemplateDeployment": false,
+                "enableSoftDelete": true,
+                "softDeleteRetentionInDays": 90,
+                "enableRbacAuthorization": false,
+                "vaultUri": "[concat('https://', parameters('keyVaultName'), '.vault.azure.net/')]",
+                "provisioningState": "Succeeded",
+                "publicNetworkAccess": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/accessPolicies",
+            "name": "[concat(parameters('keyVaultName'), '/add')]",
+            "apiVersion": "2021-11-01-preview",
+            "properties": {
+                "accessPolicies": [{
+                    "tenantId": "[parameters('tenantId')]",
+                    "objectId": "[reference(concat('Microsoft.Web/sites/', parameters('webAppName')), '2021-11-01-preview', 'Full').identity.principalId]",
+                    "permissions": {
+                        "secrets": [
+                            "Get"
+                        ]
+                    }
+                }]
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults/', parameters('keyVaultName'))]",
+                "[resourceId('Microsoft.Web/sites', parameters('webAppName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/accessPolicies",
+            "name": "[concat(parameters('keyVaultName'), '/add')]",
+            "apiVersion": "2021-11-01-preview",
+            "properties": {
+                "accessPolicies": [{
+                    "tenantId": "[parameters('tenantId')]",
+                    "objectId": "[reference(concat('Microsoft.Web/sites/', parameters('functionAppName')), '2021-11-01-preview', 'Full').identity.principalId]",
+                    "permissions": {
+                        "secrets": [
+                            "Get"
+                        ]
+                    }
+                }]
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults/', parameters('keyVaultName'))]",
+                "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/secrets",
+            "apiVersion": "2021-04-01-preview",
+            "name": "[format('{0}/{1}', parameters('keyVaultName'), parameters('secretName_MySqlGhostDatabasePassword'))]",
+            "properties": {
+                "value": "[parameters('secretValue_MySqlGhostDatabasePassword')]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/secrets",
+            "apiVersion": "2021-04-01-preview",
+            "name": "[format('{0}/{1}', parameters('keyVaultName'), parameters('secretName_GhostAdminApiKey'))]",
+            "properties": {
+                "value": "[parameters('secretValue_GhostAdminApiKey')]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/secrets",
+            "apiVersion": "2021-04-01-preview",
+            "name": "[format('{0}/{1}', parameters('keyVaultName'), parameters('secretName_DockerRegistryServerPassword'))]",
+            "properties": {
+                "value": "[parameters('secretValue_DockerRegistryServerPassword')]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+            ]
+        }
+    ]
+}
